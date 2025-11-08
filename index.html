@@ -8,31 +8,21 @@
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
 </head>
 <body>
-    <!-- Navigation -->
     <nav class="navbar">
         <div class="nav-container">
             <div class="nav-logo">
-                <div class="logo-icon">
-                    <i class="fas fa-lightbulb"></i>
-                </div>
-                <div class="logo-text">
-                    <span class="logo-title">Muni University</span>
-                    <span class="logo-subtitle">Suggestion System</span>
+                <div class="logo-main">
+                    <img src="logo.webp" alt="Muni University Logo" class="logo-img">
+                    <div class="logo-text">
+                        <span class="system-name">Student Suggestion System</span>
+                    </div>
                 </div>
             </div>
             <div class="nav-links">
-                <a href="#submit" class="nav-link">
-                    <i class="fas fa-paper-plane"></i>
-                    <span>Submit</span>
-                </a>
-                <a href="#help" class="nav-link">
-                    <i class="fas fa-question-circle"></i>
-                    <span>Help</span>
-                </a>
-                <a href="#contact" class="nav-link">
-                    <i class="fas fa-envelope"></i>
-                    <span>Contact</span>
-                </a>
+                <a href="#submit" class="nav-link">Submit Suggestion</a>
+                <a href="#recent" class="nav-link">Recent</a>
+                <a href="#help" class="nav-link">Help</a>
+                <a href="#contact" class="nav-link">Contact</a>
             </div>
             <div class="mobile-menu">
                 <i class="fas fa-bars"></i>
@@ -40,39 +30,18 @@
         </div>
     </nav>
 
-    <!-- Hero Section -->
     <section class="hero">
-        <div class="hero-background">
-            <div class="floating-shapes">
-                <div class="shape shape-1"></div>
-                <div class="shape shape-2"></div>
-                <div class="shape shape-3"></div>
-            </div>
-        </div>
         <div class="hero-content">
-            <div class="hero-badge">
-                <i class="fas fa-star"></i>
-                Your Voice Shapes Our Future
-            </div>
-            <h1 class="hero-title">
-                <span class="title-line">Share Your</span>
-                <span class="title-line highlight">Bright Ideas</span>
-            </h1>
+            <h1 class="hero-title">Your Voice Shapes Our Future</h1>
             <p class="hero-description">Help transform Muni University with your innovative suggestions and feedback. Together, we build a better campus experience.</p>
             <div class="hero-actions">
-                <a href="#submit" class="cta-button primary">
-                    <i class="fas fa-rocket"></i>
-                    Submit Suggestion
-                </a>
-                <a href="#recent" class="cta-button secondary">
-                    <i class="fas fa-eye"></i>
-                    View Recent
-                </a>
+                <a href="#submit" class="cta-button">Submit Suggestion</a>
+                <a href="#recent" class="cta-button secondary">View Recent</a>
             </div>
             <div class="hero-stats">
                 <div class="stat">
                     <div class="stat-number" id="totalSuggestionsCount">0</div>
-                    <div class="stat-label">Suggestions</div>
+                    <div class="stat-label">Total Suggestions</div>
                 </div>
                 <div class="stat">
                     <div class="stat-number" id="resolvedCount">0</div>
@@ -84,373 +53,177 @@
                 </div>
             </div>
         </div>
-        <div class="scroll-indicator">
-            <div class="scroll-arrow"></div>
-        </div>
     </section>
 
-    <!-- Suggestion Submission Form -->
     <section id="submit" class="submission-section">
         <div class="container">
             <div class="section-header">
-                <div class="section-icon">
-                    <i class="fas fa-edit"></i>
-                </div>
-                <h2>Share Your Suggestion</h2>
+                <h2>Submit Your Suggestion</h2>
                 <p>Your ideas help us improve. Be specific, constructive, and clear in your suggestions.</p>
             </div>
             
-            <div id="userMessage" class="message hidden"></div>
-            
             <form id="suggestionForm" class="suggestion-form">
-                <div class="form-grid">
-                    <div class="form-group">
-                        <label for="department" class="form-label">
-                            <i class="fas fa-building"></i>
-                            Department/Faculty
-                        </label>
-                        <select id="department" name="department" required class="form-select">
-                            <option value="">Select Department</option>
-                            <option value="Faculty of Science">Faculty of Science</option>
-                            <option value="Faculty of Education">Faculty of Education</option>
-                            <option value="Faculty of Business">Faculty of Business</option>
-                            <option value="Faculty of Agriculture">Faculty of Agriculture</option>
-                            <option value="Administration">Administration</option>
-                            <option value="Library">Library</option>
-                            <option value="ICT">ICT Department</option>
-                            <option value="Other">Other</option>
-                        </select>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="tag" class="form-label">
-                            <i class="fas fa-tag"></i>
-                            Category
-                        </label>
-                        <select id="tag" name="tag" required class="form-select">
-                            <option value="">Select Category</option>
-                            <option value="Academic">Academic</option>
-                            <option value="Infrastructure">Infrastructure</option>
-                            <option value="Administrative">Administrative</option>
-                            <option value="Student Welfare">Student Welfare</option>
-                            <option value="Technology">Technology</option>
-                            <option value="Other">Other</option>
-                        </select>
-                    </div>
+                <div class="form-group">
+                    <label for="department">
+                        <i class="fas fa-building"></i>
+                        Department/Faculty
+                    </label>
+                    <select id="department" name="department" required>
+                        <option value="">Select Department</option>
+                        <option value="Faculty of Science">Faculty of Science</option>
+                        <option value="Faculty of Education">Faculty of Education</option>
+                        <option value="Faculty of Business">Faculty of Business</option>
+                        <option value="Faculty of Agriculture">Faculty of Agriculture</option>
+                        <option value="Administration">Administration</option>
+                        <option value="Library">Library</option>
+                        <option value="ICT">ICT Department</option>
+                        <option value="Other">Other</option>
+                    </select>
                 </div>
 
                 <div class="form-group">
-                    <label for="suggestion" class="form-label">
+                    <label for="tag">
+                        <i class="fas fa-tag"></i>
+                        Category
+                    </label>
+                    <select id="tag" name="tag" required>
+                        <option value="">Select Category</option>
+                        <option value="Academic">Academic</option>
+                        <option value="Infrastructure">Infrastructure</option>
+                        <option value="Administrative">Administrative</option>
+                        <option value="Student Welfare">Student Welfare</option>
+                        <option value="Technology">Technology</option>
+                        <option value="Other">Other</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="suggestion">
                         <i class="fas fa-comment-dots"></i>
                         Your Suggestion
                     </label>
-                    <textarea id="suggestion" name="suggestion" required 
-                              placeholder="Describe your suggestion in detail. Be specific about the issue and propose practical solutions..."
-                              class="form-textarea"></textarea>
-                    <div class="char-counter">
-                        <span id="charCount">0</span>/500 characters
-                    </div>
+                    <textarea id="suggestion" name="suggestion" required placeholder="Describe your suggestion in detail. Be specific about the issue and propose practical solutions..."></textarea>
+                    <div class="char-counter"><span id="charCount">0</span>/500 characters</div>
                 </div>
 
                 <button type="submit" class="submit-btn">
                     <i class="fas fa-paper-plane"></i>
                     Submit Suggestion
-                    <div class="btn-loading"></div>
                 </button>
             </form>
         </div>
     </section>
 
-    <!-- Recent Suggestions Preview -->
     <section id="recent" class="preview-section">
         <div class="container">
             <div class="section-header">
-                <div class="section-icon">
-                    <i class="fas fa-history"></i>
-                </div>
                 <h2>Recent Suggestions</h2>
                 <p>See what other students are suggesting to improve our university</p>
             </div>
-            <div id="suggestionsPreview" class="suggestions-preview">
-                <!-- Dynamic content will be loaded here -->
-            </div>
+            <div id="suggestionsPreview" class="suggestions-preview"></div>
         </div>
     </section>
 
-    <!-- Help Section -->
     <section id="help" class="help-section">
         <div class="container">
             <div class="section-header">
-                <div class="section-icon">
-                    <i class="fas fa-life-ring"></i>
-                </div>
                 <h2>Help Center</h2>
                 <p>Find answers to common questions about the suggestion system</p>
             </div>
             
-            <div class="help-grid">
-                <div class="help-cards">
-                    <div class="help-card">
-                        <div class="help-card-icon">
-                            <i class="fas fa-question"></i>
-                        </div>
-                        <h3>How It Works</h3>
-                        <p>Learn about the suggestion submission and review process</p>
-                        <button class="help-card-btn" data-category="general">Learn More</button>
+            <div class="faq-container">
+                <div class="faq-item">
+                    <div class="faq-question">
+                        <h3>What is the Student Suggestion System?</h3>
+                        <span class="faq-toggle">+</span>
                     </div>
-                    
-                    <div class="help-card">
-                        <div class="help-card-icon">
-                            <i class="fas fa-pencil-alt"></i>
-                        </div>
-                        <h3>Submission Guide</h3>
-                        <p>Tips for writing effective and impactful suggestions</p>
-                        <button class="help-card-btn" data-category="submission">Learn More</button>
-                    </div>
-                    
-                    <div class="help-card">
-                        <div class="help-card-icon">
-                            <i class="fas fa-clock"></i>
-                        </div>
-                        <h3>Process & Timeline</h3>
-                        <p>Understand the review process and expected timelines</p>
-                        <button class="help-card-btn" data-category="process">Learn More</button>
+                    <div class="faq-answer">
+                        <p>The Student Suggestion System is an official platform for Muni University students to submit ideas and feedback to help improve various aspects of university life.</p>
                     </div>
                 </div>
                 
-                <div class="faq-container">
-                    <div class="faq-categories">
-                        <button class="category-btn active" data-category="general">
-                            <i class="fas fa-home"></i>
-                            General
-                        </button>
-                        <button class="category-btn" data-category="submission">
-                            <i class="fas fa-upload"></i>
-                            Submission
-                        </button>
-                        <button class="category-btn" data-category="process">
-                            <i class="fas fa-cogs"></i>
-                            Process
-                        </button>
-                        <button class="category-btn" data-category="technical">
-                            <i class="fas fa-laptop"></i>
-                            Technical
-                        </button>
+                <div class="faq-item">
+                    <div class="faq-question">
+                        <h3>How do I submit an effective suggestion?</h3>
+                        <span class="faq-toggle">+</span>
                     </div>
-                    
-                    <div class="faq-content">
-                        <div class="faq-category active" id="general-faq">
-                            <!-- FAQ items will be populated by JavaScript -->
-                        </div>
+                    <div class="faq-answer">
+                        <p>Be specific about the issue, provide context, offer practical solutions, and maintain a constructive tone for the best results.</p>
+                    </div>
+                </div>
+                
+                <div class="faq-item">
+                    <div class="faq-question">
+                        <h3>What is the review process?</h3>
+                        <span class="faq-toggle">+</span>
+                    </div>
+                    <div class="faq-answer">
+                        <p>Suggestions are reviewed by relevant departments, evaluated for feasibility, and you'll receive updates throughout the process.</p>
                     </div>
                 </div>
             </div>
         </div>
     </section>
 
-    <!-- Contact Us Section -->
     <section id="contact" class="contact-section">
         <div class="container">
             <div class="section-header">
-                <div class="section-icon">
-                    <i class="fas fa-headset"></i>
-                </div>
-                <h2>Get In Touch</h2>
+                <h2>Contact Us</h2>
                 <p>We're here to help! Reach out to us through any of these channels</p>
             </div>
             
-            <div class="contact-grid">
-                <div class="contact-info">
-                    <div class="contact-card">
-                        <div class="contact-icon">
-                            <i class="fas fa-envelope-open-text"></i>
-                        </div>
-                        <h3>Email Support</h3>
-                        <p>suggestions@muni.ac.ug</p>
-                        <p>studentsupport@muni.ac.ug</p>
-                        <div class="contact-meta">
-                            <i class="fas fa-clock"></i>
-                            Response: 24-48 hours
-                        </div>
+            <div class="contact-info">
+                <div class="contact-item">
+                    <div class="contact-icon">
+                        <i class="fas fa-envelope"></i>
                     </div>
-                    
-                    <div class="contact-card">
-                        <div class="contact-icon">
-                            <i class="fas fa-phone-alt"></i>
-                        </div>
-                        <h3>Phone Support</h3>
-                        <p>+256 (0) 476 420 311</p>
-                        <p>+256 (0) 476 420 312</p>
-                        <div class="contact-meta">
-                            <i class="fas fa-calendar"></i>
-                            Mon-Fri: 8:00 AM - 5:00 PM
-                        </div>
-                    </div>
-                    
-                    <div class="contact-card">
-                        <div class="contact-icon">
-                            <i class="fas fa-map-marker-alt"></i>
-                        </div>
-                        <h3>Visit Us</h3>
-                        <p>Student Affairs Office</p>
-                        <p>Main Administration Building</p>
-                        <p>Muni University, Arua</p>
-                        <div class="contact-meta">
-                            <i class="fas fa-door-open"></i>
-                            Ground Floor, Room G12
-                        </div>
-                    </div>
+                    <h3>Email Support</h3>
+                    <p>suggestions@muni.ac.ug</p>
+                    <p>studentsupport@muni.ac.ug</p>
                 </div>
                 
-                <div class="contact-form-wrapper">
-                    <div class="contact-form-header">
-                        <h3>Send us a Message</h3>
-                        <p>We'll get back to you as soon as possible</p>
+                <div class="contact-item">
+                    <div class="contact-icon">
+                        <i class="fas fa-phone"></i>
                     </div>
-                    <form class="contact-form" id="contactForm">
-                        <div class="form-group">
-                            <label for="contactName" class="form-label">
-                                <i class="fas fa-user"></i>
-                                Your Name
-                            </label>
-                            <input type="text" id="contactName" name="name" required class="form-input">
-                        </div>
-                        
-                        <div class="form-group">
-                            <label for="contactEmail" class="form-label">
-                                <i class="fas fa-envelope"></i>
-                                Email Address
-                            </label>
-                            <input type="email" id="contactEmail" name="email" required class="form-input">
-                        </div>
-                        
-                        <div class="form-group">
-                            <label for="contactSubject" class="form-label">
-                                <i class="fas fa-tag"></i>
-                                Subject
-                            </label>
-                            <select id="contactSubject" name="subject" required class="form-select">
-                                <option value="">Select Subject</option>
-                                <option value="Technical Issue">Technical Issue</option>
-                                <option value="Suggestion Inquiry">Suggestion Inquiry</option>
-                                <option value="Status Update">Status Update Request</option>
-                                <option value="General Question">General Question</option>
-                                <option value="Feedback">Feedback</option>
-                                <option value="Other">Other</option>
-                            </select>
-                        </div>
-                        
-                        <div class="form-group">
-                            <label for="contactMessage" class="form-label">
-                                <i class="fas fa-comment"></i>
-                                Message
-                            </label>
-                            <textarea id="contactMessage" name="message" required 
-                                      placeholder="Please tell us what is in your mind <br> Thank you"
-                                      class="form-textarea"></textarea>
-                        </div>
-                        
-                        <button type="submit" class="submit-btn full-width">
-                            <i class="fas fa-paper-plane"></i>
-                            Send Message
-                        </button>
-                    </form>
+                    <h3>Phone Support</h3>
+                    <p>+256 (0) 476 420 311</p>
+                    <p>+256 (0) 476 420 312</p>
+                </div>
+                
+                <div class="contact-item">
+                    <div class="contact-icon">
+                        <i class="fas fa-map-marker-alt"></i>
+                    </div>
+                    <h3>Visit Us</h3>
+                    <p>Student Affairs Office</p>
+                    <p>Main Administration Building</p>
+                    <p>Muni University, Arua</p>
                 </div>
             </div>
         </div>
     </section>
 
-    <!-- Footer -->
     <footer class="footer">
         <div class="container">
             <div class="footer-content">
-                <div class="footer-section">
-                    <div class="footer-logo">
-                        <i class="fas fa-lightbulb"></i>
-                        <div class="footer-logo-text">
-                            <strong>Muni University</strong>
-                            <span>Suggestion System</span>
-                        </div>
-                    </div>
-                    <p class="footer-description">
-                        Empowering students to shape the future of our university through innovative suggestions and collaborative improvement.
-                    </p>
-                    <div class="social-links">
-                        <a href="#" class="social-link">
-                            <i class="fab fa-facebook-f"></i>
-                        </a>
-                        <a href="#" class="social-link">
-                            <i class="fab fa-twitter"></i>
-                        </a>
-                        <a href="#" class="social-link">
-                            <i class="fab fa-linkedin-in"></i>
-                        </a>
-                        <a href="#" class="social-link">
-                            <i class="fab fa-instagram"></i>
-                        </a>
+                <div class="footer-logo">
+                    <img src="https://www.muni.ac.ug/images/logo.png" alt="Muni University Logo" class="footer-logo-img">
+                    <div class="footer-logo-text">
+                        <strong>Muni University</strong>
+                        <span>Student Suggestion System</span>
                     </div>
                 </div>
-                
-                <div class="footer-section">
-                    <h3>Quick Links</h3>
-                    <div class="footer-links">
-                        <a href="#submit" class="footer-link">
-                            <i class="fas fa-chevron-right"></i>
-                            Submit Suggestion
-                        </a>
-                        <a href="#recent" class="footer-link">
-                            <i class="fas fa-chevron-right"></i>
-                            Recent Suggestions
-                        </a>
-                        <a href="#help" class="footer-link">
-                            <i class="fas fa-chevron-right"></i>
-                            Help Center
-                        </a>
-                        <a href="#contact" class="footer-link">
-                            <i class="fas fa-chevron-right"></i>
-                            Contact Us
-                        </a>
-                    </div>
-                </div>
-                
-                <div class="footer-section">
-                    <h3>Contact Info</h3>
-                    <div class="contact-info-footer">
-                        <div class="contact-item">
-                            <i class="fas fa-map-marker-alt"></i>
-                            <span>P.O. Box 725, Arua, Uganda</span>
-                        </div>
-                        <div class="contact-item">
-                            <i class="fas fa-phone"></i>
-                            <span>+256 (0) 476 420 311</span>
-                        </div>
-                        <div class="contact-item">
-                            <i class="fas fa-envelope"></i>
-                            <span>suggestions@muni.ac.ug</span>
-                        </div>
-                    </div>
-                </div>
+                <p class="footer-description">
+                    Empowering students to shape the future of our university through innovative suggestions and collaborative improvement.
+                </p>
             </div>
-            
             <div class="footer-bottom">
-                <div class="footer-bottom-content">
-                    <p>&copy; 2024 Muni University - Student Suggestion System. All rights reserved.</p>
-                    <div class="footer-bottom-links">
-                        <a href="#">Privacy Policy</a>
-                        <a href="#">Terms of Service</a>
-                        <a href="#">Accessibility</a>
-                    </div>
-                </div>
+                <p>&copy; 2024 Muni University - Student Suggestion System. All rights reserved.</p>
             </div>
         </div>
     </footer>
 
-    <!-- Scroll to Top Button -->
-    <button class="scroll-to-top">
-        <i class="fas fa-chevron-up"></i>
-    </button>
-
     <script src="script.js"></script>
 </body>
-
 </html>
