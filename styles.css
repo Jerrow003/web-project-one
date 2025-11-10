@@ -53,7 +53,7 @@ body {
 
 .logo-img {
     height: 50px;
-    filter: brightness(0) invert(1);
+    filter: brightness(1) invert(0);
 }
 
 .logo-text {
@@ -389,11 +389,14 @@ section {
     color: var(--text-dark);
 }
 
-.suggestion-status {
-    padding: 0.4rem 1rem;
-    border-radius: 15px;
-    font-weight: 500;
-    font-size: 0.8rem;
+.footer-logo {
+    display: flex;
+    align-items: center;
+    filter: brightness(0.5) invert(0);
+    justify-content: center;
+    gap: 1rem;
+    margin-bottom: 1rem;
+    flex-direction: column; /* Added to stack items vertically */
 }
 
 .status-new {
@@ -545,8 +548,8 @@ section {
 }
 
 .footer-logo-img {
-    height: 40px;
-    filter: brightness(0) invert(1);
+    height: 50px;
+    filter: brightness(10.5rem) invert(0);
 }
 
 .footer-logo-text {
