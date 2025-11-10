@@ -12,7 +12,9 @@
         <div class="nav-container">
             <div class="nav-logo">
                 <div class="logo-main">
-                    <img src="logo.webp" alt="Muni University Logo" class="logo-img">
+                    <picture>
+                        <img src="logo.webp" alt="Muni University Logo" class="logo-img" loading="lazy" width="80" height="80">
+                    </picture>
                     <div class="logo-text">
                         <span class="system-name">Student Suggestion System</span>
                     </div>
@@ -70,10 +72,12 @@
                     </label>
                     <select id="department" name="department" required>
                         <option value="">Select Department</option>
+                        <option value="Faculty of Technoscience">Faculty of Technoscience</option>
                         <option value="Faculty of Science">Faculty of Science</option>
                         <option value="Faculty of Education">Faculty of Education</option>
-                        <option value="Faculty of Business">Faculty of Business</option>
-                        <option value="Faculty of Agriculture">Faculty of Agriculture</option>
+                        <option value="Faculty of Management Science">Faculty of Management Science</option>
+                        <option value="Faculty of Agriculture">Faculty of Agriculture and Environmental Science</option>
+                        <option value="Faculty of Health Science">Faculty of Health Science</option>
                         <option value="Administration">Administration</option>
                         <option value="Library">Library</option>
                         <option value="ICT">ICT Department</option>
@@ -102,7 +106,7 @@
                         <i class="fas fa-comment-dots"></i>
                         Your Suggestion
                     </label>
-                    <textarea id="suggestion" name="suggestion" required placeholder="Describe your suggestion in detail. Be specific about the issue and propose practical solutions..."></textarea>
+                    <textarea id="suggestion" name="suggestion" required placeholder="Describe the issue clearly and propose practical solutions."></textarea>
                     <div class="char-counter"><span id="charCount">0</span>/500 characters</div>
                 </div>
 
@@ -208,7 +212,7 @@
         <div class="container">
             <div class="footer-content">
                 <div class="footer-logo">
-                    <img src="https://www.muni.ac.ug/images/logo.png" alt="Muni University Logo" class="footer-logo-img">
+                    <img src="logo.webp" alt="Muni University Logo" class="footer-logo-img">
                     <div class="footer-logo-text">
                         <strong>Muni University</strong>
                         <span>Student Suggestion System</span>
@@ -227,3 +231,4 @@
     <script src="script.js"></script>
 </body>
 </html>
+
