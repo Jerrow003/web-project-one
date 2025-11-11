@@ -25,7 +25,6 @@ body {
     background: var(--cream);
 }
 
-/* Navigation */
 .navbar {
     background: var(--maroon);
     padding: 1rem 0;
@@ -99,11 +98,8 @@ body {
     cursor: pointer;
 }
 
-/* Hero Section */
 .hero {
-    /* CHANGED: Set background to cream instead of the maroon gradient */
     background: var(--cream);
-    /* CHANGED: Text needs to be dark for contrast on a cream background */
     color: var(--text-dark);
     padding: 8rem 0 4rem;
     text-align: center;
@@ -159,9 +155,7 @@ body {
 
 .cta-button.secondary {
     background: transparent;
-    /* CHANGED: Secondary button border needs a dark color (maroon) */
     border: 2px solid var(--maroon);
-    /* CHANGED: Secondary button text needs a dark color (maroon) */
     color: var(--maroon);
 }
 
@@ -193,11 +187,9 @@ body {
     opacity: 0.8;
     text-transform: uppercase;
     letter-spacing: 1px;
-    /* CHANGED: Stat label text color from --cream to dark text or maroon */
     color: var(--text-dark);
 }
 
-/* Sections */
 section {
     padding: 5rem 0;
 }
@@ -227,7 +219,6 @@ section {
     margin: 0 auto;
 }
 
-/* Form Section */
 .submission-section {
     background: var(--cream);
 }
@@ -313,7 +304,6 @@ section {
     box-shadow: 0 4px 8px rgba(128, 0, 0, 0.3);
 }
 
-/* Preview Section */
 .preview-section {
     background: var(--cream-dark);
 }
@@ -396,7 +386,7 @@ section {
     justify-content: center;
     gap: 1rem;
     margin-bottom: 1rem;
-    flex-direction: column; /* Added to stack items vertically */
+    flex-direction: column; 
 }
 
 .status-new {
@@ -414,7 +404,6 @@ section {
     color: #2E8B57;
 }
 
-/* Help Section */
 .help-section {
     background: var(--cream);
 }
@@ -481,7 +470,6 @@ section {
     line-height: 1.6;
 }
 
-/* Contact Section */
 .contact-section {
     background: var(--cream-dark);
 }
@@ -527,7 +515,6 @@ section {
     margin-bottom: 0.5rem;
 }
 
-/* Footer */
 .footer {
     background: var(--maroon);
     color: var(--white);
@@ -588,7 +575,6 @@ section {
     color: var(--cream);
 }
 
-/* No Suggestions State */
 .no-suggestions {
     grid-column: 1 / -1;
     text-align: center;
@@ -615,7 +601,6 @@ section {
     color: var(--text-light);
 }
 
-/* Responsive Design */
 @media (max-width: 768px) {
     .nav-links {
         display: none;
@@ -709,3 +694,4 @@ section {
         padding: 1.5rem;
     }
 }
+
