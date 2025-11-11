@@ -9,13 +9,11 @@ function initializeApp() {
     loadRecentSuggestions();
     updateHeroStats();
     
-    // Add sample data if empty
     if (loadSuggestions().length === 0) {
         addSampleData();
     }
 }
 
-// Navigation
 function initializeNavigation() {
     const mobileMenu = document.querySelector('.mobile-menu');
     const navLinks = document.querySelector('.nav-links');
@@ -27,7 +25,6 @@ function initializeNavigation() {
         });
     }
     
-    // Close mobile menu when clicking on links
     document.querySelectorAll('.nav-link').forEach(link => {
         link.addEventListener('click', () => {
             if (window.innerWidth <= 768) {
@@ -37,7 +34,6 @@ function initializeNavigation() {
     });
 }
 
-// Suggestion Form
 function initializeSuggestionForm() {
     const form = document.getElementById('suggestionForm');
     const textarea = document.getElementById('suggestion');
@@ -70,7 +66,6 @@ function handleSuggestionSubmit(e) {
     const submitBtn = e.target.querySelector('.submit-btn');
     const originalText = submitBtn.innerHTML;
     
-    // Show loading state
     submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Submitting...';
     submitBtn.disabled = true;
     
@@ -85,7 +80,6 @@ function handleSuggestionSubmit(e) {
             timestamp: new Date().toISOString()
         };
 
-        // Validate
         if (!suggestion.department || !suggestion.suggestion_text || !suggestion.tag) {
             alert('Please fill in all fields');
             submitBtn.innerHTML = originalText;
@@ -107,15 +101,12 @@ function handleSuggestionSubmit(e) {
             return;
         }
 
-        // Save suggestion
         let suggestions = loadSuggestions();
         suggestions.unshift(suggestion);
         saveSuggestions(suggestions);
-
-        // Show success
+        
         alert('Thank you! Your suggestion has been submitted successfully. The administration will review it soon.');
         
-        // Reset form and update display
         e.target.reset();
         document.getElementById('charCount').textContent = '0';
         submitBtn.innerHTML = originalText;
@@ -126,14 +117,12 @@ function handleSuggestionSubmit(e) {
     }, 1000);
 }
 
-// FAQ
 function initializeFAQ() {
     document.querySelectorAll('.faq-question').forEach(question => {
         question.addEventListener('click', function() {
             const item = this.parentElement;
             const isActive = item.classList.contains('active');
             
-            // Close all FAQ items
             document.querySelectorAll('.faq-item').forEach(faqItem => {
                 faqItem.classList.remove('active');
             });
@@ -146,7 +135,6 @@ function initializeFAQ() {
     });
 }
 
-// Data Management
 function loadSuggestions() {
     const suggestions = localStorage.getItem('suggestions');
     return suggestions ? JSON.parse(suggestions) : [];
@@ -201,7 +189,6 @@ function displayRecentSuggestions(suggestions) {
     `).join('');
 }
 
-// Statistics
 function updateHeroStats() {
     const suggestions = loadSuggestions();
     const total = suggestions.length;
@@ -211,7 +198,6 @@ function updateHeroStats() {
     document.getElementById('resolvedCount').textContent = resolved;
 }
 
-// Sample Data
 function addSampleData() {
     const sampleSuggestions = [
         {
@@ -245,7 +231,6 @@ function addSampleData() {
     updateHeroStats();
 }
 
-// Smooth scrolling for navigation links
 document.querySelectorAll('a[href^="#"]').forEach(anchor => {
     anchor.addEventListener('click', function (e) {
         e.preventDefault();
@@ -259,3 +244,4 @@ document.querySelectorAll('a[href^="#"]').forEach(anchor => {
         }
     });
 });
+
