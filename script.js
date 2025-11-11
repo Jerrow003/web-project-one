@@ -48,7 +48,6 @@ function initializeSuggestionForm() {
             const count = this.value.length;
             charCount.textContent = count;
             
-            // Change color when approaching limit
             if (count > 450) {
                 charCount.style.color = '#ff0000';
             } else if (count > 350) {
@@ -127,7 +126,6 @@ function initializeFAQ() {
                 faqItem.classList.remove('active');
             });
             
-            // Open clicked item if it wasn't active
             if (!isActive) {
                 item.classList.add('active');
             }
@@ -244,4 +242,5 @@ document.querySelectorAll('a[href^="#"]').forEach(anchor => {
         }
     });
 });
+
 
