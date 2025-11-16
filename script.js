@@ -243,4 +243,164 @@ document.querySelectorAll('a[href^="#"]').forEach(anchor => {
     });
 });
 
+(function(){
+  const preview = document.getElementById('suggestionsPreview');
+  const template = document.getElementById('suggestionTemplate');
+
+  if (!preview || !template) return;
+
+  // Utility: load stored suggestions (expects array of {id, department, tag, text, date})
+  function loadSuggestions(){
+    try{
+      const raw = localStorage.getItem('suggestions');
+      return raw ? JSON.parse(raw) : [];
+    }catch(e){ return []; }
+  }
+
+  // Utility: load resolutions map { id: { text, implemented } }
+  function loadResolutions(){
+    try{
+      const raw = localStorage.getItem('resolutions');
+      return raw ? JSON.parse(raw) : {};
+    }catch(e){ return {}; }
+  }
+
+  function saveResolutions(map){
+    localStorage.setItem('resolutions', JSON.stringify(map));
+  }
+
+  function render(){
+    const items = loadSuggestions();
+    const resolutions = loadResolutions();
+    preview.innerHTML = '';
+    if (!items.length){
+      preview.innerHTML = '<p>No suggestions yet. Be the first to submit.</p>';
+      return;
+    }
+
+    items.forEach(s => {
+      const node = template.content.cloneNode(true);
+      const card = node.querySelector('.suggestion-card');
+      const dept = node.querySelector('.suggestion-department');
+      const tag = node.querySelector('.suggestion-tag');
+      const date = node.querySelector('.suggestion-date');
+      const text = node.querySelector('.suggestion-text');
+
+      card.dataset.id = s.id ?? String(Date.now()) ;
+      dept.textContent = s.department || 'General';
+      tag.textContent = s.tag || '';
+      date.textContent = s.date || '';
+      text.textContent = s.suggestion || s.text || '';
+
+      // Apply resolution if exists
+      const res = resolutions[card.dataset.id];
+      const existingResEl = node.querySelector('.existing-resolution');
+      const resTextEl = node.querySelector('.resolution-text');
+      const editorEl = node.querySelector('.resolution-editor');
+      const textarea = node.querySelector('.resolution-input');
+
+      if (res && res.text){
+        existingResEl.hidden = false;
+        resTextEl.textContent = res.text;
+        // hide editor after saved
+        editorEl.style.display = res.implemented ? 'none' : 'block';
+      }
+
+      preview.appendChild(node);
+    });
+  }
+
+  // Handle clicks inside preview (delegation)
+  preview.addEventListener('click', (e) => {
+    const toggle = e.target.closest('.suggestion-toggle');
+    if (toggle){
+      const card = toggle.closest('.suggestion-card');
+      const body = card.querySelector('.suggestion-body');
+      const expanded = toggle.getAttribute('aria-expanded') === 'true';
+      if (expanded){
+        body.hidden = true;
+        toggle.setAttribute('aria-expanded','false');
+        toggle.textContent = '+';
+      } else {
+        body.hidden = false;
+        toggle.setAttribute('aria-expanded','true');
+        toggle.textContent = '−';
+      }
+      return;
+    }
+
+    const saveBtn = e.target.closest('.save-resolution');
+    if (saveBtn){
+      const card = saveBtn.closest('.suggestion-card');
+      const id = card.dataset.id;
+      const textarea = card.querySelector('.resolution-input');
+      const text = textarea.value.trim();
+      if (!text) return alert('Please type a resolution before saving.');
+      const resolutions = loadResolutions();
+      resolutions[id] = resolutions[id] || {};
+      resolutions[id].text = text;
+      resolutions[id].implemented = resolutions[id].implemented || false;
+      saveResolutions(resolutions);
+      // update UI: show existing-resolution and hide editor
+      const existing = card.querySelector('.existing-resolution');
+      existing.hidden = false;
+      card.querySelector('.resolution-text').textContent = text;
+      // hide editor (still allow mark implemented separately)
+      card.querySelector('.resolution-editor').style.display = 'none';
+      return;
+    }
+
+    const markBtn = e.target.closest('.mark-implemented');
+    if (markBtn){
+      const card = markBtn.closest('.suggestion-card');
+      const id = card.dataset.id;
+      const resolutions = loadResolutions();
+      resolutions[id] = resolutions[id] || {};
+      resolutions[id].implemented = true;
+      saveResolutions(resolutions);
+      // Visual feedback: hide editor and mark resolution area
+      card.querySelector('.resolution-editor').style.display = 'none';
+      const existing = card.querySelector('.existing-resolution');
+      existing.hidden = false;
+      const resText = card.querySelector('.resolution-text');
+      if (!resText.textContent) resText.textContent = 'Marked as implemented.';
+      // Add small implemented badge
+      if (!card.querySelector('.implemented-badge')){
+        const badge = document.createElement('span');
+        badge.className = 'implemented-badge';
+        badge.textContent = 'Implemented';
+        badge.style.marginLeft = '0.6rem';
+        badge.style.color = '#16a34a';
+        badge.style.fontWeight = '700';
+        card.querySelector('.suggestion-meta').appendChild(badge);
+      }
+      return;
+    }
+  });
+
+  // Render initially
+  render();
+
+  // If your app already saves suggestions via the form, this will pick them up.
+  // If not, provide a tiny fallback to add form submissions to storage:
+  const form = document.getElementById('suggestionForm');
+  if (form){
+    form.addEventListener('submit', (ev) => {
+      ev.preventDefault();
+      const dept = form.department?.value || '';
+      const tag = form.tag?.value || '';
+      const suggestion = form.suggestion?.value || '';
+      const items = loadSuggestions();
+      const id = String(Date.now());
+      items.unshift({ id, department: dept, tag, suggestion, date: new Date().toLocaleString() });
+      localStorage.setItem('suggestions', JSON.stringify(items));
+      form.reset();
+      render();
+      // auto-open first item (the newly added)
+      const firstToggle = preview.querySelector('.suggestion-toggle');
+      if (firstToggle){ firstToggle.click(); }
+    });
+  }
+})();
+
 
