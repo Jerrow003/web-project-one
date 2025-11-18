@@ -1,0 +1,320 @@
+/* Admin Dashboard Styles */
+.dashboard-container {
+    display: grid;
+    grid-template-columns: 280px 1fr;
+    min-height: 100vh;
+    padding-top: 80px;
+}
+
+/* Sidebar Styles */
+.sidebar {
+    /* semi-transparent so underlying site/background shows through */
+    background: rgba(44,62,80,0.85);
+    color: white;
+    padding: 0;
+    position: fixed;
+    width: 280px;
+    height: calc(100vh - 80px);
+    overflow-y: auto;
+    box-shadow: 2px 0 10px rgba(0,0,0,0.1);
+    transition: transform 0.3s ease;
+    z-index: 1000;
+}
+
+.sidebar-header {
+    padding: 2rem 1.5rem;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+    background: rgba(52,73,94,0.6);
+}
+
+.sidebar-header h3 {
+    color: white;
+    margin-bottom: 0.5rem;
+    font-size: 1.3rem;
+    font-weight: 600;
+}
+
+.sidebar-header p {
+    color: #bdc3c7;
+    opacity: 0.9;
+    font-size: 0.9rem;
+}
+
+.sidebar-nav {
+    list-style: none;
+    padding: 1rem 0;
+}
+
+.sidebar-nav li {
+    margin: 0;
+}
+
+.nav-item {
+    color: #ecf0f1;
+    text-decoration: none;
+    padding: 1rem 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    transition: all 0.3s;
+    border-left: 4px solid transparent;
+}
+
+.nav-item:hover {
+    background: rgba(255,255,255,0.05);
+    color: white;
+}
+
+.nav-item.active {
+    background: rgba(52, 152, 219, 0.2);
+    border-left-color: #3498db;
+    color: white;
+}
+
+.nav-item i {
+    width: 20px;
+    text-align: center;
+    font-size: 1.1rem;
+}
+
+.nav-item span {
+    font-weight: 500;
+}
+
+/* Main Content Styles - FIXED TO WHITE BACKGROUND */
+.main-content {
+    padding: 2rem;
+    margin-left: 280px;
+    /* keep page background visible and ensure high-contrast text */
+    background: transparent;
+    color: #212529;
+    min-height: calc(100vh - 80px);
+    transition: margin-left 0.3s ease;
+}
+
+.content-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+}
+
+.content-header h1 {
+    color: #2c3e50;
+    font-size: 2rem;
+    font-weight: 700;
+    margin: 0;
+}
+
+.header-actions {
+    display: flex;
+    gap: 1rem;
+}
+
+.refresh-btn {
+    background: #800000;
+    color: white;
+    border: none;
+    padding: 0.75rem 1.5rem;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    transition: background 0.3s;
+}
+
+.refresh-btn:hover {
+    background: #660000;
+}
+
+/* Loading and Empty States */
+.loading-message,
+.no-suggestions {
+    /* keep subtle framed look but fully transparent background */
+    background: transparent;
+    border-radius: 12px;
+    border: 2px dashed rgba(0,0,0,0.04);
+}
+
+/* Replace cream action area with transparent/translucent */
+.suggestion-actions-admin {
+    display: flex;
+    gap: 0.75rem;
+    padding: 1rem 1.5rem;
+    background: transparent; /* removed #f8f9fa */
+    border-top: 1px solid rgba(0,0,0,0.04);
+}
+
+/* Make individual action buttons neutral by default (no cream) */
+.action-btn-admin {
+    flex: 1;
+    padding: 0.75rem 1rem;
+    border: 2px solid rgba(0,0,0,0.06);
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    font-weight: 600;
+    transition: all 0.18s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    background: transparent; /* removed cream */
+    color: #2c3e50;
+}
+
+/* Keep hover states clear and high-contrast */
+.action-btn-admin:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 18px rgba(0,0,0,0.08);
+}
+
+/* Specific button color accents on hover (no cream baseline) */
+.respond-btn:hover {
+    background: #007bff;
+    color: white;
+    border-color: #007bff;
+}
+
+.implement-btn:hover {
+    background: #28a745;
+    color: white;
+    border-color: #28a745;
+}
+
+.reject-btn:hover,
+.delete-btn:hover {
+    background: #dc3545;
+    color: white;
+    border-color: #dc3545;
+}
+
+/* Make preview / admin response panels less cream-like */
+.suggestion-preview,
+.admin-response-display,
+.suggestion-preview p,
+.admin-response-display p {
+    background: rgba(255,255,255,0.06); /* subtle translucent panel */
+    color: inherit;
+    border-left-color: rgba(128,0,0,0.85); /* keep accent */
+}
+
+/* Modal divider colors -> softer translucent borders */
+.modal-header,
+.modal-footer {
+    border-color: rgba(0,0,0,0.06);
+}
+
+/* Form controls: keep clear neutral borders (avoid cream) */
+.form-group textarea,
+.form-group select {
+    border: 2px solid rgba(0,0,0,0.06);
+    background: rgba(255,255,255,0.02);
+}
+
+/* Ensure small-screen override still doesn't reintroduce cream */
+@media (max-width: 480px) {
+    .main-content { background: transparent !important; }
+    .suggestion-actions-admin { background: transparent !important; }
+}
+
+/* Responsive Design */
+@media (max-width: 1024px) {
+    .dashboard-container {
+        grid-template-columns: 1fr;
+    }
+    
+    .sidebar {
+        position: fixed;
+        width: 280px;
+        transform: translateX(-100%);
+        z-index: 999;
+    }
+    
+    .sidebar.open {
+        transform: translateX(0);
+    }
+    
+    .main-content {
+        margin-left: 0;
+    }
+    
+    #sidebarToggle {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+}
+
+@media (max-width: 768px) {
+    .main-content {
+        padding: 1rem;
+    }
+    
+    .content-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 1rem;
+    }
+    
+    .header-actions {
+        width: 100%;
+        justify-content: flex-start;
+    }
+    
+    .suggestion-header-admin {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 1rem;
+    }
+    
+    .suggestion-actions-admin {
+        flex-direction: column;
+    }
+    
+    .action-btn-admin {
+        width: 100%;
+    }
+    
+    .modal-content {
+        width: 95%;
+        margin: 1rem;
+    }
+    
+    .modal-footer {
+        flex-direction: column;
+    }
+}
+
+@media (max-width: 480px) {
+    .content-header h1 {
+        font-size: 1.5rem;
+    }
+    
+    .suggestion-header-admin,
+    .suggestion-content,
+    .suggestion-actions-admin {
+        padding: 1rem;
+    }
+    /* avoid forcing a solid white/cream on small screens */
+    .main-content { background: transparent !important; }
+    .department-badge,
+    .status-badge {
+        font-size: 0.75rem;
+        padding: 0.4rem 0.8rem;
+    }
+    
+    .modal-body {
+        padding: 1rem;
+    }
+    
+    .modal-footer {
+        padding: 1rem;
+    }
+    
+    .sidebar {
+        width: 100%;
+    }
+}
