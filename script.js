@@ -1,240 +1,192 @@
-document.addEventListener('DOMContentLoaded', function() {
-    initializeApp();
+// Basic functionality for the suggestion system
+const SUGGESTIONS_KEY = 'muni_suggestions_v1';
+const MAX_CHARS = 500;
+
+function readSuggestions() {
+  try {
+    return JSON.parse(localStorage.getItem(SUGGESTIONS_KEY) || '[]');
+  } catch (e) {
+    console.error('Failed to parse suggestions', e);
+    return [];
+  }
+}
+
+function saveSuggestions(list) {
+  localStorage.setItem(SUGGESTIONS_KEY, JSON.stringify(list));
+}
+
+function formatDate(ts) {
+  const d = new Date(ts);
+  return d.toLocaleString();
+}
+
+function escapeHtml(str = '') {
+  return String(str)
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#39;');
+}
+
+function renderSuggestions(list) {
+  const container = document.getElementById('suggestionsPreview');
+  if (!container) return;
+
+  if (!list || list.length === 0) {
+    container.innerHTML = `
+      <div class="no-suggestions">
+        <i class="fas fa-lightbulb"></i>
+        <h3>No Suggestions Yet</h3>
+        <p>Be the first to submit a suggestion and help improve our university!</p>
+      </div>
+    `;
+    return;
+  }
+
+  // Show only latest 6 suggestions on homepage
+  const recentSuggestions = list.slice(0, 6);
+
+  container.innerHTML = recentSuggestions.map(s => {
+    const statusClass = `status-${(s.status || 'pending').toString().toLowerCase().replace(/\s+/g,'-')}`;
+    const statusLabel = escapeHtml((s.status || 'Pending').toString());
+    const adminHTML = s.adminResponse ? `
+      <div class="admin-response" aria-live="polite">
+        <h4>Response from Admin</h4>
+        <div>${escapeHtml(s.adminResponse)}</div>
+        <small><strong>Status:</strong> ${statusLabel}</small>
+      </div>
+    ` : '';
+    return `
+      <article class="suggestion-card" aria-live="polite" data-id="${s.id}">
+        <header class="suggestion-meta">
+          <strong class="suggestion-tag">${escapeHtml(s.tag || 'Other')}</strong>
+          <span class="suggestion-dept">${escapeHtml(s.department || 'General')}</span>
+          <time datetime="${new Date(s.created).toISOString()}">${formatDate(s.created)}</time>
+          <span class="suggestion-status ${statusClass}">${statusLabel}</span>
+        </header>
+        <p class="suggestion-text">${escapeHtml(s.text)}</p>
+        ${adminHTML}
+      </article>
+    `;
+  }).join('');
+}
+
+function updateStats(list) {
+  const totalEl = document.getElementById('totalSuggestionsCount');
+  const implementedEl = document.getElementById('resolvedCount');
+  const deptEl = document.getElementById('departmentsCount');
+
+  const total = list.length;
+  const implemented = list.filter(s => (s.status || '').toLowerCase() === 'implemented' || (s.status || '').toLowerCase() === 'resolved').length;
+  const uniqueDepartments = new Set(list.map(s => s.department)).size;
+
+  if (totalEl) totalEl.textContent = total;
+  if (implementedEl) implementedEl.textContent = implemented;
+  if (deptEl) deptEl.textContent = Math.max(uniqueDepartments, 9);
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  // initial render
+  const suggestions = readSuggestions();
+  renderSuggestions(suggestions);
+  updateStats(suggestions);
+
+  // char counter
+  const textarea = document.getElementById('suggestion');
+  const charCount = document.getElementById('charCount');
+  if (textarea && charCount) {
+    charCount.textContent = textarea.value.length;
+    textarea.addEventListener('input', () => {
+      const len = textarea.value.length;
+      if (len > MAX_CHARS) textarea.value = textarea.value.slice(0, MAX_CHARS);
+      charCount.textContent = textarea.value.length;
+    });
+  }
+
+  // submit handler
+  const form = document.getElementById('suggestionForm');
+  if (form) {
+    form.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const department = form.department?.value?.trim() || 'Other';
+      const tag = form.tag?.value?.trim() || 'Other';
+      const text = form.suggestion?.value?.trim();
+      if (!text) {
+        alert('Please enter a suggestion.');
+        return;
+      }
+
+      const newSuggestion = {
+        id: Date.now(),
+        department,
+        tag,
+        text,
+        status: 'Pending',
+        adminResponse: '',
+        created: Date.now()
+      };
+
+      const list = readSuggestions();
+      list.unshift(newSuggestion); // newest first
+      saveSuggestions(list);
+
+      renderSuggestions(list);
+      updateStats(list);
+
+      form.reset();
+      if (charCount) charCount.textContent = '0';
+      form.department.focus();
+      
+      // Show success message
+      showNotification('Suggestion submitted successfully!', 'success');
+    });
+  }
 });
 
-function initializeApp() {
-    initializeNavigation();
-    initializeSuggestionForm();
-    initializeFAQ();
-    loadRecentSuggestions();
-    updateHeroStats();
+// FAQ toggle functionality
+const faqItems = document.querySelectorAll('.faq-item');
+faqItems.forEach(item => {
+    const question = item.querySelector('.faq-question');
+    const answer = item.querySelector('.faq-answer');
+    const toggle = item.querySelector('.faq-toggle');
     
-    if (loadSuggestions().length === 0) {
-        addSampleData();
-    }
-}
-
-function initializeNavigation() {
-    const mobileMenu = document.querySelector('.mobile-menu');
-    const navLinks = document.querySelector('.nav-links');
-    
-    if (mobileMenu) {
-        mobileMenu.addEventListener('click', function() {
-            const isVisible = navLinks.style.display === 'flex';
-            navLinks.style.display = isVisible ? 'none' : 'flex';
-        });
-    }
-    
-    document.querySelectorAll('.nav-link').forEach(link => {
-        link.addEventListener('click', () => {
-            if (window.innerWidth <= 768) {
-                navLinks.style.display = 'none';
-            }
-        });
-    });
-}
-
-function initializeSuggestionForm() {
-    const form = document.getElementById('suggestionForm');
-    const textarea = document.getElementById('suggestion');
-    const charCount = document.getElementById('charCount');
-    
-    if (form) {
-        form.addEventListener('submit', handleSuggestionSubmit);
-    }
-    
-    if (textarea && charCount) {
-        textarea.addEventListener('input', function() {
-            const count = this.value.length;
-            charCount.textContent = count;
-            
-            if (count > 450) {
-                charCount.style.color = '#ff0000';
-            } else if (count > 350) {
-                charCount.style.color = '#ff9900';
-            } else {
-                charCount.style.color = '#666666';
-            }
-        });
-    }
-}
-
-function handleSuggestionSubmit(e) {
-    e.preventDefault();
-    
-    const submitBtn = e.target.querySelector('.submit-btn');
-    const originalText = submitBtn.innerHTML;
-    
-    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Submitting...';
-    submitBtn.disabled = true;
-    
-    setTimeout(() => {
-        const formData = new FormData(e.target);
-        const suggestion = {
-            id: Date.now(),
-            department: formData.get('department'),
-            suggestion_text: formData.get('suggestion'),
-            tag: formData.get('tag'),
-            status: 'New',
-            timestamp: new Date().toISOString()
-        };
-
-        if (!suggestion.department || !suggestion.suggestion_text || !suggestion.tag) {
-            alert('Please fill in all fields');
-            submitBtn.innerHTML = originalText;
-            submitBtn.disabled = false;
-            return;
-        }
-
-        if (suggestion.suggestion_text.length < 10) {
-            alert('Please provide a more detailed suggestion (minimum 10 characters)');
-            submitBtn.innerHTML = originalText;
-            submitBtn.disabled = false;
-            return;
-        }
-
-        if (suggestion.suggestion_text.length > 500) {
-            alert('Suggestion must be less than 500 characters');
-            submitBtn.innerHTML = originalText;
-            submitBtn.disabled = false;
-            return;
-        }
-
-        let suggestions = loadSuggestions();
-        suggestions.unshift(suggestion);
-        saveSuggestions(suggestions);
-        
-        alert('Thank you! Your suggestion has been submitted successfully. The administration will review it soon.');
-        
-        e.target.reset();
-        document.getElementById('charCount').textContent = '0';
-        submitBtn.innerHTML = originalText;
-        submitBtn.disabled = false;
-        
-        loadRecentSuggestions();
-        updateHeroStats();
-    }, 1000);
-}
-
-function initializeFAQ() {
-    document.querySelectorAll('.faq-question').forEach(question => {
+    if (question && answer && toggle) {
         question.addEventListener('click', function() {
-            const item = this.parentElement;
             const isActive = item.classList.contains('active');
             
-            document.querySelectorAll('.faq-item').forEach(faqItem => {
-                faqItem.classList.remove('active');
+            // Close all other FAQ items
+            faqItems.forEach(otherItem => {
+                if (otherItem !== item) {
+                    otherItem.classList.remove('active');
+                    otherItem.querySelector('.faq-toggle').textContent = '+';
+                }
             });
             
+            // Toggle current item
             if (!isActive) {
                 item.classList.add('active');
+                toggle.textContent = '-';
+            } else {
+                item.classList.remove('active');
+                toggle.textContent = '+';
             }
         });
-    });
-}
-
-function loadSuggestions() {
-    const suggestions = localStorage.getItem('suggestions');
-    return suggestions ? JSON.parse(suggestions) : [];
-}
-
-function saveSuggestions(suggestions) {
-    localStorage.setItem('suggestions', JSON.stringify(suggestions));
-}
-
-function loadRecentSuggestions() {
-    const suggestions = loadSuggestions();
-    displayRecentSuggestions(suggestions.slice(0, 6));
-}
-
-function displayRecentSuggestions(suggestions) {
-    const container = document.getElementById('suggestionsPreview');
-    if (!container) return;
-
-    if (suggestions.length === 0) {
-        container.innerHTML = `
-            <div class="no-suggestions" style="grid-column: 1 / -1; text-align: center; padding: 3rem; color: #666; font-style: italic;">
-                <i class="fas fa-inbox" style="font-size: 3rem; margin-bottom: 1rem; color: #ccc;"></i>
-                <h3>No Suggestions Yet</h3>
-                <p>Be the first to share your ideas and help improve Muni University!</p>
-            </div>
-        `;
-        return;
     }
-
-    container.innerHTML = suggestions.map(suggestion => `
-        <div class="suggestion-card">
-            <div class="suggestion-header">
-                <span class="suggestion-department">
-                    <i class="fas fa-building"></i>
-                    ${suggestion.department}
-                </span>
-                <span class="suggestion-category">${suggestion.tag}</span>
-            </div>
-            <div class="suggestion-text">
-                ${suggestion.suggestion_text}
-            </div>
-            <div class="suggestion-footer">
-                <span class="suggestion-date">
-                    <i class="far fa-clock"></i>
-                    ${new Date(suggestion.timestamp).toLocaleDateString()}
-                </span>
-                <span class="suggestion-status status-${suggestion.status.toLowerCase().replace(' ', '')}">
-                    ${suggestion.status}
-                </span>
-            </div>
-        </div>
-    `).join('');
-}
-
-function updateHeroStats() {
-    const suggestions = loadSuggestions();
-    const total = suggestions.length;
-    const resolved = suggestions.filter(s => s.status === 'Resolved').length;
+});
     
-    document.getElementById('totalSuggestionsCount').textContent = total;
-    document.getElementById('resolvedCount').textContent = resolved;
-}
-
-function addSampleData() {
-    const sampleSuggestions = [
-        {
-            id: 1,
-            department: "Library",
-            suggestion_text: "Extend library opening hours during exam periods to accommodate students who prefer studying late at night. Many students would benefit from having access to library resources until midnight.",
-            tag: "Academic",
-            status: "In Progress",
-            timestamp: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString()
-        },
-        {
-            id: 2,
-            department: "ICT",
-            suggestion_text: "Improve WiFi connectivity in student hostels and common areas. The current network is often slow and unreliable, affecting online learning and research activities.",
-            tag: "Technology",
-            status: "New",
-            timestamp: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString()
-        },
-        {
-            id: 3,
-            department: "Administration",
-            suggestion_text: "Install more water dispensers around campus, especially near lecture halls and the library. Students often struggle to find drinking water during busy days.",
-            tag: "Infrastructure",
-            status: "Resolved",
-            timestamp: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString()
-        }
-    ];
-    
-    saveSuggestions(sampleSuggestions);
-    loadRecentSuggestions();
-    updateHeroStats();
-}
-
+// Smooth scrolling for navigation links
 document.querySelectorAll('a[href^="#"]').forEach(anchor => {
     anchor.addEventListener('click', function (e) {
         e.preventDefault();
-        const target = document.querySelector(this.getAttribute('href'));
-        if (target) {
-            const offsetTop = target.getBoundingClientRect().top + window.pageYOffset - 80;
+        
+        const targetId = this.getAttribute('href');
+        if (targetId === '#') return;
+        
+        const targetElement = document.querySelector(targetId);
+        if (targetElement) {
+            const offsetTop = targetElement.offsetTop - 80; // Adjust for fixed header
+            
             window.scrollTo({
                 top: offsetTop,
                 behavior: 'smooth'
@@ -243,164 +195,90 @@ document.querySelectorAll('a[href^="#"]').forEach(anchor => {
     });
 });
 
-(function(){
-  const preview = document.getElementById('suggestionsPreview');
-  const template = document.getElementById('suggestionTemplate');
-
-  if (!preview || !template) return;
-
-  // Utility: load stored suggestions (expects array of {id, department, tag, text, date})
-  function loadSuggestions(){
-    try{
-      const raw = localStorage.getItem('suggestions');
-      return raw ? JSON.parse(raw) : [];
-    }catch(e){ return []; }
-  }
-
-  // Utility: load resolutions map { id: { text, implemented } }
-  function loadResolutions(){
-    try{
-      const raw = localStorage.getItem('resolutions');
-      return raw ? JSON.parse(raw) : {};
-    }catch(e){ return {}; }
-  }
-
-  function saveResolutions(map){
-    localStorage.setItem('resolutions', JSON.stringify(map));
-  }
-
-  function render(){
-    const items = loadSuggestions();
-    const resolutions = loadResolutions();
-    preview.innerHTML = '';
-    if (!items.length){
-      preview.innerHTML = '<p>No suggestions yet. Be the first to submit.</p>';
-      return;
+// Notification system
+function showNotification(message, type = 'info') {
+    // Remove any existing notifications
+    const existingNotification = document.querySelector('.notification');
+    if (existingNotification) {
+        existingNotification.remove();
     }
 
-    items.forEach(s => {
-      const node = template.content.cloneNode(true);
-      const card = node.querySelector('.suggestion-card');
-      const dept = node.querySelector('.suggestion-department');
-      const tag = node.querySelector('.suggestion-tag');
-      const date = node.querySelector('.suggestion-date');
-      const text = node.querySelector('.suggestion-text');
+    const notification = document.createElement('div');
+    notification.className = `notification notification-${type}`;
+    notification.innerHTML = `
+        <div class="notification-content">
+            <i class="fas ${type === 'success' ? 'fa-check-circle' : 'fa-info-circle'}"></i>
+            <span>${message}</span>
+        </div>
+        <button class="notification-close" onclick="this.parentElement.remove()">
+            <i class="fas fa-times"></i>
+        </button>
+    `;
 
-      card.dataset.id = s.id ?? String(Date.now()) ;
-      dept.textContent = s.department || 'General';
-      tag.textContent = s.tag || '';
-      date.textContent = s.date || '';
-      text.textContent = s.suggestion || s.text || '';
-
-      // Apply resolution if exists
-      const res = resolutions[card.dataset.id];
-      const existingResEl = node.querySelector('.existing-resolution');
-      const resTextEl = node.querySelector('.resolution-text');
-      const editorEl = node.querySelector('.resolution-editor');
-      const textarea = node.querySelector('.resolution-input');
-
-      if (res && res.text){
-        existingResEl.hidden = false;
-        resTextEl.textContent = res.text;
-        // hide editor after saved
-        editorEl.style.display = res.implemented ? 'none' : 'block';
-      }
-
-      preview.appendChild(node);
-    });
-  }
-
-  // Handle clicks inside preview (delegation)
-  preview.addEventListener('click', (e) => {
-    const toggle = e.target.closest('.suggestion-toggle');
-    if (toggle){
-      const card = toggle.closest('.suggestion-card');
-      const body = card.querySelector('.suggestion-body');
-      const expanded = toggle.getAttribute('aria-expanded') === 'true';
-      if (expanded){
-        body.hidden = true;
-        toggle.setAttribute('aria-expanded','false');
-        toggle.textContent = '+';
-      } else {
-        body.hidden = false;
-        toggle.setAttribute('aria-expanded','true');
-        toggle.textContent = '−';
-      }
-      return;
+    // Add styles if not already added
+    if (!document.querySelector('#notification-styles')) {
+        const styles = document.createElement('style');
+        styles.id = 'notification-styles';
+        styles.textContent = `
+            .notification {
+                position: fixed;
+                top: 100px;
+                right: 20px;
+                background: white;
+                padding: 1rem 1.5rem;
+                border-radius: 8px;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+                border-left: 4px solid #800000;
+                z-index: 10000;
+                display: flex;
+                align-items: center;
+                gap: 1rem;
+                max-width: 400px;
+                animation: slideInRight 0.3s ease;
+            }
+            .notification-success {
+                border-left-color: #4cd964;
+            }
+            .notification-content {
+                display: flex;
+                align-items: center;
+                gap: 0.5rem;
+                flex: 1;
+            }
+            .notification-close {
+                background: none;
+                border: none;
+                cursor: pointer;
+                color: #666;
+                padding: 0.25rem;
+            }
+            .notification-close:hover {
+                color: #333;
+            }
+            @keyframes slideInRight {
+                from {
+                    transform: translateX(100%);
+                    opacity: 0;
+                }
+                to {
+                    transform: translateX(0);
+                    opacity: 1;
+                }
+            }
+        `;
+        document.head.appendChild(styles);
     }
 
-    const saveBtn = e.target.closest('.save-resolution');
-    if (saveBtn){
-      const card = saveBtn.closest('.suggestion-card');
-      const id = card.dataset.id;
-      const textarea = card.querySelector('.resolution-input');
-      const text = textarea.value.trim();
-      if (!text) return alert('Please type a resolution before saving.');
-      const resolutions = loadResolutions();
-      resolutions[id] = resolutions[id] || {};
-      resolutions[id].text = text;
-      resolutions[id].implemented = resolutions[id].implemented || false;
-      saveResolutions(resolutions);
-      // update UI: show existing-resolution and hide editor
-      const existing = card.querySelector('.existing-resolution');
-      existing.hidden = false;
-      card.querySelector('.resolution-text').textContent = text;
-      // hide editor (still allow mark implemented separately)
-      card.querySelector('.resolution-editor').style.display = 'none';
-      return;
-    }
+    document.body.appendChild(notification);
 
-    const markBtn = e.target.closest('.mark-implemented');
-    if (markBtn){
-      const card = markBtn.closest('.suggestion-card');
-      const id = card.dataset.id;
-      const resolutions = loadResolutions();
-      resolutions[id] = resolutions[id] || {};
-      resolutions[id].implemented = true;
-      saveResolutions(resolutions);
-      // Visual feedback: hide editor and mark resolution area
-      card.querySelector('.resolution-editor').style.display = 'none';
-      const existing = card.querySelector('.existing-resolution');
-      existing.hidden = false;
-      const resText = card.querySelector('.resolution-text');
-      if (!resText.textContent) resText.textContent = 'Marked as implemented.';
-      // Add small implemented badge
-      if (!card.querySelector('.implemented-badge')){
-        const badge = document.createElement('span');
-        badge.className = 'implemented-badge';
-        badge.textContent = 'Implemented';
-        badge.style.marginLeft = '0.6rem';
-        badge.style.color = '#16a34a';
-        badge.style.fontWeight = '700';
-        card.querySelector('.suggestion-meta').appendChild(badge);
-      }
-      return;
-    }
-  });
+    // Auto remove after 5 seconds
+    setTimeout(() => {
+        if (notification.parentElement) {
+            notification.remove();
+        }
+    }, 5000);
+}
 
-  // Render initially
-  render();
-
-  // If your app already saves suggestions via the form, this will pick them up.
-  // If not, provide a tiny fallback to add form submissions to storage:
-  const form = document.getElementById('suggestionForm');
-  if (form){
-    form.addEventListener('submit', (ev) => {
-      ev.preventDefault();
-      const dept = form.department?.value || '';
-      const tag = form.tag?.value || '';
-      const suggestion = form.suggestion?.value || '';
-      const items = loadSuggestions();
-      const id = String(Date.now());
-      items.unshift({ id, department: dept, tag, suggestion, date: new Date().toLocaleString() });
-      localStorage.setItem('suggestions', JSON.stringify(items));
-      form.reset();
-      render();
-      // auto-open first item (the newly added)
-      const firstToggle = preview.querySelector('.suggestion-toggle');
-      if (firstToggle){ firstToggle.click(); }
-    });
-  }
-})();
-
-
+// Export functions for admin dashboard (if needed in global scope)
+window.readSuggestions = readSuggestions;
+window.saveSuggestions = saveSuggestions;
