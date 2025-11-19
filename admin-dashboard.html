@@ -4,14 +4,14 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin Dashboard - Muni University</title>
-    <link rel="stylesheet" href="styles.css">
     <link rel="stylesheet" href="admin-dashboard.css">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
 </head>
 <body>
     <a href="#main-content" class="skip-link">Skip to content</a>
     <div id="announcer" class="sr-only" aria-live="polite" aria-atomic="true"></div>
-     <nav class="navbar" role="navigation" aria-label="Main navigation">
+    
+    <nav class="navbar" role="navigation" aria-label="Main navigation">
         <div class="nav-container">
             <div class="nav-logo">
                 <div class="logo-main">
@@ -21,22 +21,29 @@
                     </div>
                 </div>
             </div>
-            <!-- Mobile toggle button -->
+            
             <button id="sidebarToggle" type="button" class="nav-toggle" aria-controls="sidebar" aria-expanded="false" aria-label="Toggle navigation">
                 <i class="fas fa-bars"></i>
             </button>
+            
             <div class="nav-links">
-                <a href="index.html" class="nav-link" target="_blank" rel="noopener">View Site</a>
-                <button type="button" class="nav-link admin-btn" onclick="logout()">Logout</button>
+                <a href="index.html" class="nav-link" target="_blank" rel="noopener">
+                    <i class="fas fa-external-link-alt"></i>
+                    View Student Site
+                </a>
+                <button type="button" class="nav-link admin-btn" onclick="logout()">
+                    <i class="fas fa-sign-out-alt"></i>
+                    Logout
+                </button>
             </div>
         </div>
     </nav>
 
     <div class="dashboard-container">
-        <aside class="sidebar">
+        <aside class="sidebar" id="sidebar">
             <div class="sidebar-header">
                 <h3>Admin Panel</h3>
-                <p>Welcome, Admin</p>
+                <p>Welcome, Administrator</p>
             </div>
             <ul class="sidebar-nav">
                 <li>
@@ -93,7 +100,7 @@
     </div>
 
     <!-- Response Modal -->
-    <div id="responseModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="responseModalTitle" tabindex="-1">
+    <div id="responseModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="responseModalTitle">
         <div class="modal-content">
             <div class="modal-header">
                 <h3 id="responseModalTitle">Respond to Suggestion</h3>
@@ -108,7 +115,8 @@
                 </div>
                 <div class="form-group">
                     <label for="adminResponse">Your Response:</label>
-                    <textarea id="adminResponse" placeholder="Type your response here..." rows="6"></textarea>
+                    <textarea id="adminResponse" placeholder="Type your response here..." rows="6" maxlength="1000"></textarea>
+                    <div class="char-counter"><span id="responseCharCount">0</span>/1000 characters</div>
                 </div>
                 <div class="form-group">
                     <label for="responseStatus">Update Status:</label>
@@ -122,13 +130,16 @@
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn-secondary" onclick="closeResponseModal()">Cancel</button>
-                <button type="button" class="btn-primary" onclick="submitResponse()">Submit Response</button>
+                <button type="button" class="btn-primary" onclick="submitResponse()">
+                    <i class="fas fa-reply"></i>
+                    Submit Response
+                </button>
             </div>
         </div>
     </div>
 
     <!-- Delete Confirmation Modal -->
-    <div id="deleteModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="deleteModalTitle" tabindex="-1">
+    <div id="deleteModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="deleteModalTitle">
         <div class="modal-content">
             <div class="modal-header">
                 <h3 id="deleteModalTitle">Delete Suggestion</h3>
@@ -145,11 +156,14 @@
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn-secondary" onclick="closeDeleteModal()">Cancel</button>
-                <button type="button" class="btn-danger" onclick="confirmDelete()">Delete Suggestion</button>
+                <button type="button" class="btn-danger" onclick="confirmDelete()">
+                    <i class="fas fa-trash"></i>
+                    Delete Suggestion
+                </button>
             </div>
         </div>
     </div>
 
-    <script src="admin-dashboard.js" defer></script>
+    <script src="admin-dashboard.js"></script>
 </body>
 </html>
