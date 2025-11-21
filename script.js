@@ -1,5 +1,18 @@
-// Student Suggestion System - Main JavaScript
-const SUGGESTIONS_KEY = 'muni_suggestions_v1';
+// Student Suggestion System - Main JavaScript with Firebase Integration
+import { auth, db } from './firebase.js';
+import { 
+    collection, 
+    addDoc, 
+    getDocs, 
+    updateDoc, 
+    deleteDoc, 
+    doc, 
+    query, 
+    orderBy,
+    where,
+    onSnapshot
+} from 'firebase/firestore';
+
 const MAX_CHARS = 500;
 
 // Initialize when DOM is loaded
@@ -7,14 +20,19 @@ document.addEventListener('DOMContentLoaded', function() {
     initializeSuggestionSystem();
     initializeNavigation();
     initializeFAQ();
-    initializeSampleData();
+    initializeFirebaseAuth();
 });
 
+// Firebase Authentication
+function initializeFirebaseAuth() {
+    // You can add authentication features here if needed
+    console.log('Firebase Auth initialized');
+}
+
 function initializeSuggestionSystem() {
-    // Initial render
-    const suggestions = readSuggestions();
-    renderSuggestions(suggestions);
-    updateStats(suggestions);
+    // Initial render from Firebase
+    loadSuggestionsFromFirebase();
+    updateStatsFromFirebase();
 
     // Character counter
     const textarea = document.getElementById('suggestion');
@@ -134,54 +152,48 @@ function initializeFAQ() {
     });
 }
 
-function initializeSampleData() {
-    // Add sample data if no suggestions exist
-    const suggestions = readSuggestions();
-    if (suggestions.length === 0) {
-        const sampleSuggestions = [
-            {
-                id: Date.now() - 86400000 * 5,
-                department: "Faculty of Technoscience",
-                tag: "Technology",
-                text: "Upgrade computer lab equipment to support the latest software required for programming courses. Many computers are outdated and cannot run modern development tools efficiently.",
-                status: "In Review",
-                adminResponse: "We appreciate this suggestion. The IT department is currently conducting an assessment of all computer labs and will present an upgrade proposal in the next budget cycle.",
-                created: Date.now() - 86400000 * 5,
-                submittedBy: "Computer Science Student"
-            },
-            {
-                id: Date.now() - 86400000 * 3,
-                department: "Library",
-                tag: "Academic",
-                text: "Extend library hours during exam periods to accommodate students who prefer studying late at night. Current closing time of 8 PM is too early during finals.",
-                status: "Implemented",
-                adminResponse: "Great suggestion! Starting next semester, the library will remain open until 11 PM during the two weeks of final examinations. Security arrangements have been made.",
-                created: Date.now() - 86400000 * 3,
-                submittedBy: "Student Union"
-            },
-            {
-                id: Date.now() - 86400000 * 1,
-                department: "Administration",
-                tag: "Student Welfare",
-                text: "Install more water dispensers around campus, especially near lecture halls and the student center. Staying hydrated is important for concentration.",
-                status: "Pending",
-                adminResponse: "",
-                created: Date.now() - 86400000 * 1,
-                submittedBy: "Health Science Student"
-            }
-        ];
+// Firebase Functions
+async function loadSuggestionsFromFirebase() {
+    try {
+        const q = query(collection(db, 'suggestions'), orderBy('created', 'desc'));
+        const querySnapshot = await getDocs(q);
+        const suggestions = [];
         
-        sampleSuggestions.forEach(suggestion => {
-            suggestions.push(suggestion);
+        querySnapshot.forEach((doc) => {
+            suggestions.push({
+                id: doc.id,
+                ...doc.data()
+            });
         });
         
-        saveSuggestions(suggestions);
         renderSuggestions(suggestions);
-        updateStats(suggestions);
+        return suggestions;
+    } catch (error) {
+        console.error('Error loading suggestions:', error);
+        showNotification('Error loading suggestions. Please try again.', 'error');
+        return [];
     }
 }
 
-function handleFormSubmission(e) {
+// Real-time listener for suggestions
+function setupRealtimeListener() {
+    const q = query(collection(db, 'suggestions'), orderBy('created', 'desc'));
+    
+    onSnapshot(q, (querySnapshot) => {
+        const suggestions = [];
+        querySnapshot.forEach((doc) => {
+            suggestions.push({
+                id: doc.id,
+                ...doc.data()
+            });
+        });
+        
+        renderSuggestions(suggestions);
+        updateStats(suggestions);
+    });
+}
+
+async function handleFormSubmission(e) {
     e.preventDefault();
     
     const form = e.target;
@@ -200,23 +212,19 @@ function handleFormSubmission(e) {
     }
 
     const newSuggestion = {
-        id: Date.now(),
         department,
         tag,
         text,
         status: 'Pending',
         adminResponse: '',
-        created: Date.now(),
-        submittedBy: 'Student'
+        created: new Date().toISOString(),
+        submittedBy: 'Student',
+        priority: 'Medium'
     };
 
-    const list = readSuggestions();
-    list.unshift(newSuggestion);
-    const success = saveSuggestions(list);
-
-    if (success) {
-        renderSuggestions(list);
-        updateStats(list);
+    try {
+        const docRef = await addDoc(collection(db, 'suggestions'), newSuggestion);
+        showNotification('Suggestion submitted successfully!', 'success');
         form.reset();
         
         const charCount = document.getElementById('charCount');
@@ -225,36 +233,13 @@ function handleFormSubmission(e) {
             charCount.classList.remove('warning');
         }
         
-        showNotification('Suggestion submitted successfully!', 'success');
-        
         // Refocus on department select
         setTimeout(() => {
             form.department.focus();
         }, 100);
-    }
-}
-
-// Storage functions
-function readSuggestions() {
-    try {
-        const stored = localStorage.getItem(SUGGGESTIONS_KEY);
-        if (stored) {
-            return JSON.parse(stored);
-        }
-    } catch (e) {
-        console.error('Failed to parse suggestions', e);
-    }
-    return [];
-}
-
-function saveSuggestions(list) {
-    try {
-        localStorage.setItem(SUGGESTIONS_KEY, JSON.stringify(list));
-        return true;
-    } catch (e) {
-        console.error('Failed to save suggestions', e);
-        showNotification('Failed to save suggestion. Please try again.', 'error');
-        return false;
+    } catch (error) {
+        console.error('Error adding suggestion:', error);
+        showNotification('Failed to submit suggestion. Please try again.', 'error');
     }
 }
 
@@ -302,11 +287,25 @@ function renderSuggestions(list) {
                         <i class="far fa-clock"></i>
                         ${formatDate(s.created)}
                     </span>
-                    <span>ID: #${s.id}</span>
+                    <span>ID: ${s.id.substring(0, 8)}...</span>
                 </footer>
             </article>
         `;
     }).join('');
+}
+
+async function updateStatsFromFirebase() {
+    try {
+        const querySnapshot = await getDocs(collection(db, 'suggestions'));
+        const list = [];
+        querySnapshot.forEach((doc) => {
+            list.push({ id: doc.id, ...doc.data() });
+        });
+        
+        updateStats(list);
+    } catch (error) {
+        console.error('Error loading stats:', error);
+    }
 }
 
 function updateStats(list) {
@@ -328,8 +327,8 @@ function updateStats(list) {
 }
 
 // Utility functions
-function formatDate(timestamp) {
-    const date = new Date(timestamp);
+function formatDate(dateString) {
+    const date = new Date(dateString);
     const now = new Date();
     const diffTime = Math.abs(now - date);
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
@@ -395,7 +394,13 @@ function getNotificationIcon(type) {
     }
 }
 
-// Make functions available globally for admin dashboard compatibility
-window.readSuggestions = readSuggestions;
-window.saveSuggestions = saveSuggestions;
+// Setup real-time listener when page loads
+document.addEventListener('DOMContentLoaded', function() {
+    setTimeout(() => {
+        setupRealtimeListener();
+    }, 1000);
+});
+
+// Make functions available globally
 window.showNotification = showNotification;
+window.loadSuggestionsFromFirebase = loadSuggestionsFromFirebase;
