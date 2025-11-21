@@ -1,133 +1,30 @@
-// Admin Dashboard JavaScript - Integrated with Student Suggestion System
+// Admin Dashboard JavaScript - Integrated with Firebase
+import { auth, db } from './firebase.js';
+import { 
+    collection, 
+    addDoc, 
+    getDocs, 
+    updateDoc, 
+    deleteDoc, 
+    doc, 
+    query, 
+    orderBy,
+    where,
+    onSnapshot
+} from 'firebase/firestore';
+import { signOut } from 'firebase/auth';
+
 class AdminDashboard {
     constructor() {
-        this.SUGGESTIONS_KEY = 'muni_suggestions_v1';
-        this.MAX_CHARS = 500;
-        this.suggestions = this.loadSuggestionsFromStorage();
+        this.suggestions = [];
         this.currentSuggestionId = null;
         this.currentFilter = 'all';
+        this.unsubscribe = null;
         this.init();
     }
 
-    // Load suggestions from localStorage (compatible with student system)
-    loadSuggestionsFromStorage() {
-        try {
-            const stored = localStorage.getItem(this.SUGGESTIONS_KEY);
-            if (stored) {
-                const suggestions = JSON.parse(stored);
-                // Transform student format to admin format if needed
-                return suggestions.map(suggestion => this.transformSuggestionFormat(suggestion));
-            }
-        } catch (e) {
-            console.error('Failed to parse suggestions', e);
-        }
-
-        // Default sample data in student system format
-        return [
-            {
-                id: Date.now() - 86400000 * 5,
-                department: "Academic Affairs",
-                tag: "Academic",
-                text: "Implement more flexible office hours for professors to better accommodate student schedules, especially for working students and those with family commitments.",
-                status: "Pending",
-                adminResponse: "",
-                created: Date.now() - 86400000 * 5,
-                submittedBy: "Student Union",
-                priority: "Medium"
-            },
-            {
-                id: Date.now() - 86400000 * 4,
-                department: "Facilities Management",
-                tag: "Facilities",
-                text: "Install more water fountains and hydration stations around campus, particularly near the library, student center, and sports facilities to promote student wellness.",
-                status: "In Review",
-                adminResponse: "We are currently evaluating the feasibility of this suggestion and conducting a campus-wide assessment. Will provide an update after the next facilities committee meeting.",
-                created: Date.now() - 86400000 * 4,
-                submittedBy: "Health & Wellness Committee",
-                priority: "High"
-            },
-            {
-                id: Date.now() - 86400000 * 3,
-                department: "IT Services",
-                tag: "Technology",
-                text: "Upgrade the Wi-Fi infrastructure in dormitories and academic buildings to handle increased device connectivity and support online learning platforms.",
-                status: "Implemented",
-                adminResponse: "This suggestion has been successfully implemented. New access points were installed during the winter break, and network capacity has been increased by 40%.",
-                created: Date.now() - 86400000 * 3,
-                submittedBy: "Computer Science Department",
-                priority: "High"
-            },
-            {
-                id: Date.now() - 86400000 * 2,
-                department: "Student Affairs",
-                tag: "Student Life",
-                text: "Create more social events and cultural programs for international students to help them integrate better into campus life and build community connections.",
-                status: "Rejected",
-                adminResponse: "While we appreciate this suggestion and recognize its importance, our current budget allocation does not allow for additional social programming this semester. We will reconsider this for the next academic year.",
-                created: Date.now() - 86400000 * 2,
-                submittedBy: "International Students Association",
-                priority: "Medium"
-            }
-        ];
-    }
-
-    // Transform suggestion format between student and admin systems
-    transformSuggestionFormat(suggestion) {
-        return {
-            id: suggestion.id,
-            department: suggestion.department || 'General',
-            text: suggestion.text || '',
-            status: suggestion.status || 'Pending',
-            response: suggestion.adminResponse || '',
-            date: this.formatDateForDisplay(suggestion.created || Date.now()),
-            submittedBy: suggestion.submittedBy || 'Anonymous Student',
-            priority: suggestion.priority || 'Medium',
-            tag: suggestion.tag || 'Other',
-            created: suggestion.created || Date.now(),
-            // Keep original fields for compatibility
-            adminResponse: suggestion.adminResponse || '',
-            originalData: suggestion
-        };
-    }
-
-    // Format date for display
-    formatDateForDisplay(timestamp) {
-        const date = new Date(timestamp);
-        return date.toISOString().split('T')[0]; // YYYY-MM-DD format
-    }
-
-    // Save suggestions to localStorage (compatible with student system)
-    saveSuggestions() {
-        try {
-            // Transform back to student system format before saving
-            const studentFormatSuggestions = this.suggestions.map(suggestion => {
-                const baseSuggestion = suggestion.originalData || {};
-                return {
-                    id: suggestion.id,
-                    department: suggestion.department,
-                    tag: suggestion.tag || 'Other',
-                    text: suggestion.text,
-                    status: suggestion.status,
-                    adminResponse: suggestion.response || suggestion.adminResponse,
-                    created: suggestion.created,
-                    submittedBy: suggestion.submittedBy,
-                    priority: suggestion.priority,
-                    // Preserve any additional fields from original data
-                    ...baseSuggestion
-                };
-            });
-            
-            localStorage.setItem(this.SUGGESTIONS_KEY, JSON.stringify(studentFormatSuggestions));
-            return true;
-        } catch (e) {
-            console.error('Failed to save suggestions', e);
-            this.showNotification('Failed to save suggestions', 'error');
-            return false;
-        }
-    }
-
     // Initialize the dashboard
-    init() {
+    async init() {
         // Check authentication
         if (!this.checkAuth()) {
             window.location.href = 'admin-login.html';
@@ -135,11 +32,9 @@ class AdminDashboard {
         }
 
         this.setupEventListeners();
-        this.loadSuggestions();
+        await this.loadSuggestions();
+        this.setupRealtimeListener();
         this.announce('Admin dashboard loaded successfully');
-        
-        // Update student system stats
-        this.updateStudentSystemStats();
     }
 
     // Check authentication
@@ -157,21 +52,42 @@ class AdminDashboard {
         return true;
     }
 
-    // Update stats in student system
-    updateStudentSystemStats() {
-        const stats = this.calculateStats();
-        
-        // Update student system elements if they exist
-        const totalEl = document.getElementById('totalSuggestionsCount');
-        const implementedEl = document.getElementById('resolvedCount');
-        const deptEl = document.getElementById('departmentsCount');
-
-        if (totalEl) totalEl.textContent = stats.total;
-        if (implementedEl) implementedEl.textContent = stats.implemented;
-        if (deptEl) {
-            const uniqueDepartments = new Set(this.suggestions.map(s => s.department)).size;
-            deptEl.textContent = Math.max(uniqueDepartments, 1);
+    // Load suggestions from Firebase
+    async loadSuggestions() {
+        try {
+            const q = query(collection(db, 'suggestions'), orderBy('created', 'desc'));
+            const querySnapshot = await getDocs(q);
+            this.suggestions = [];
+            
+            querySnapshot.forEach((doc) => {
+                this.suggestions.push({
+                    id: doc.id,
+                    ...doc.data()
+                });
+            });
+            
+            this.displaySuggestions(this.suggestions);
+        } catch (error) {
+            console.error('Error loading suggestions:', error);
+            this.showNotification('Error loading suggestions', 'error');
         }
+    }
+
+    // Setup real-time listener
+    setupRealtimeListener() {
+        const q = query(collection(db, 'suggestions'), orderBy('created', 'desc'));
+        
+        this.unsubscribe = onSnapshot(q, (querySnapshot) => {
+            this.suggestions = [];
+            querySnapshot.forEach((doc) => {
+                this.suggestions.push({
+                    id: doc.id,
+                    ...doc.data()
+                });
+            });
+            
+            this.refreshCurrentView();
+        });
     }
 
     // Setup all event listeners
@@ -209,18 +125,6 @@ class AdminDashboard {
                 this.submitResponse();
             }
         });
-
-        // Response character counter
-        const responseTextarea = document.getElementById('adminResponse');
-        const responseCharCount = document.getElementById('responseCharCount');
-        if (responseTextarea && responseCharCount) {
-            responseTextarea.addEventListener('input', () => {
-                responseCharCount.textContent = responseTextarea.value.length;
-            });
-        }
-
-        // Search functionality
-        this.setupSearch();
     }
 
     // Toggle sidebar for mobile
@@ -326,7 +230,7 @@ class AdminDashboard {
 
     // Load responded suggestions
     loadRespondedSuggestions() {
-        const responded = this.suggestions.filter(s => s.response && s.response.trim() !== '');
+        const responded = this.suggestions.filter(s => s.adminResponse && s.adminResponse.trim() !== '');
         this.displaySuggestions(responded);
     }
 
@@ -411,44 +315,44 @@ class AdminDashboard {
                     ` : ''}
                     
                     <div class="suggestion-meta">
-                        <span>Submitted: ${this.formatDate(suggestion.date)}</span>
-                        <span>ID: #${suggestion.id}</span>
+                        <span>Submitted: ${this.formatDate(suggestion.created)}</span>
+                        <span>ID: ${suggestion.id.substring(0, 8)}...</span>
                     </div>
                     
-                    ${suggestion.response ? `
+                    ${suggestion.adminResponse ? `
                     <div class="admin-response-display">
                         <div class="admin-response-header">
                             <div class="admin-response-title">
                                 <i class="fas fa-reply"></i>
                                 Admin Response
                             </div>
-                            <div class="admin-response-date">Responded: ${this.formatDate(suggestion.date)}</div>
+                            <div class="admin-response-date">Responded: ${this.formatDate(suggestion.created)}</div>
                         </div>
-                        <p>${this.escapeHtml(suggestion.response)}</p>
+                        <p>${this.escapeHtml(suggestion.adminResponse)}</p>
                     </div>
                     ` : ''}
                 </div>
                 <div class="suggestion-actions-admin">
                     <button type="button" class="action-btn-admin respond-btn" 
-                            onclick="adminDashboard.openResponseModal(${suggestion.id})"
+                            onclick="adminDashboard.openResponseModal('${suggestion.id}')"
                             data-tooltip="Respond to this suggestion">
                         <i class="fas fa-reply"></i>
                         <span>Respond</span>
                     </button>
                     <button type="button" class="action-btn-admin implement-btn" 
-                            onclick="adminDashboard.updateStatus(${suggestion.id}, 'Implemented')"
+                            onclick="adminDashboard.updateStatus('${suggestion.id}', 'Implemented')"
                             data-tooltip="Mark as implemented">
                         <i class="fas fa-check"></i>
                         <span>Implement</span>
                     </button>
                     <button type="button" class="action-btn-admin reject-btn" 
-                            onclick="adminDashboard.updateStatus(${suggestion.id}, 'Rejected')"
+                            onclick="adminDashboard.updateStatus('${suggestion.id}', 'Rejected')"
                             data-tooltip="Reject this suggestion">
                         <i class="fas fa-times"></i>
                         <span>Reject</span>
                     </button>
                     <button type="button" class="action-btn-admin delete-btn" 
-                            onclick="adminDashboard.openDeleteModal(${suggestion.id})"
+                            onclick="adminDashboard.openDeleteModal('${suggestion.id}')"
                             data-tooltip="Delete this suggestion">
                         <i class="fas fa-trash"></i>
                         <span>Delete</span>
@@ -467,14 +371,8 @@ class AdminDashboard {
         
         document.getElementById('previewDepartment').textContent = suggestion.department;
         document.getElementById('previewText').textContent = suggestion.text;
-        document.getElementById('adminResponse').value = suggestion.response || '';
+        document.getElementById('adminResponse').value = suggestion.adminResponse || '';
         document.getElementById('responseStatus').value = suggestion.status;
-        
-        // Update character count
-        const responseCharCount = document.getElementById('responseCharCount');
-        if (responseCharCount) {
-            responseCharCount.textContent = document.getElementById('adminResponse').value.length;
-        }
         
         const modal = document.getElementById('responseModal');
         modal.classList.add('active');
@@ -496,7 +394,7 @@ class AdminDashboard {
     }
 
     // Submit response
-    submitResponse() {
+    async submitResponse() {
         const response = document.getElementById('adminResponse').value.trim();
         const status = document.getElementById('responseStatus').value;
         
@@ -505,23 +403,20 @@ class AdminDashboard {
             return;
         }
         
-        const suggestionIndex = this.suggestions.findIndex(s => s.id === this.currentSuggestionId);
-        if (suggestionIndex !== -1) {
-            this.suggestions[suggestionIndex].response = response;
-            this.suggestions[suggestionIndex].status = status;
-            this.suggestions[suggestionIndex].respondedDate = new Date().toISOString().split('T')[0];
+        try {
+            const suggestionRef = doc(db, 'suggestions', this.currentSuggestionId);
+            await updateDoc(suggestionRef, {
+                adminResponse: response,
+                status: status,
+                respondedDate: new Date().toISOString()
+            });
             
-            // Save to localStorage (compatible with student system)
-            const success = this.saveSuggestions();
-            
-            if (success) {
-                this.refreshCurrentView();
-                this.updateStudentSystemStats(); // Update student system
-                this.showNotification('Response submitted successfully!', 'success');
-            }
+            this.showNotification('Response submitted successfully!', 'success');
+            this.closeResponseModal();
+        } catch (error) {
+            console.error('Error updating suggestion:', error);
+            this.showNotification('Failed to submit response. Please try again.', 'error');
         }
-        
-        this.closeResponseModal();
     }
 
     // Open delete confirmation modal
@@ -549,41 +444,34 @@ class AdminDashboard {
     }
 
     // Confirm and execute deletion
-    confirmDelete() {
-        if (this.currentSuggestionId) {
-            const suggestion = this.suggestions.find(s => s.id === this.currentSuggestionId);
-            this.suggestions = this.suggestions.filter(s => s.id !== this.currentSuggestionId);
-            
-            // Save to localStorage
-            const success = this.saveSuggestions();
-            
-            if (success) {
-                this.refreshCurrentView();
-                this.updateStudentSystemStats(); // Update student system
-                this.showNotification(`Suggestion from ${suggestion.department} deleted successfully`, 'success');
-                this.announce('Suggestion deleted');
-            }
+    async confirmDelete() {
+        if (!this.currentSuggestionId) return;
+        
+        try {
+            await deleteDoc(doc(db, 'suggestions', this.currentSuggestionId));
+            this.showNotification('Suggestion deleted successfully', 'success');
+            this.announce('Suggestion deleted');
+        } catch (error) {
+            console.error('Error deleting suggestion:', error);
+            this.showNotification('Failed to delete suggestion. Please try again.', 'error');
         }
         
         this.closeDeleteModal();
     }
 
     // Update suggestion status
-    updateStatus(id, status) {
-        const suggestionIndex = this.suggestions.findIndex(s => s.id === id);
-        if (suggestionIndex !== -1) {
-            const oldStatus = this.suggestions[suggestionIndex].status;
-            this.suggestions[suggestionIndex].status = status;
+    async updateStatus(id, status) {
+        try {
+            const suggestionRef = doc(db, 'suggestions', id);
+            await updateDoc(suggestionRef, {
+                status: status
+            });
             
-            // Save to localStorage
-            const success = this.saveSuggestions();
-            
-            if (success) {
-                this.refreshCurrentView();
-                this.updateStudentSystemStats(); // Update student system
-                this.showNotification(`Suggestion status updated to ${status}`, 'success');
-                this.announce(`Status changed from ${oldStatus} to ${status}`);
-            }
+            this.showNotification(`Suggestion status updated to ${status}`, 'success');
+            this.announce(`Status changed to ${status}`);
+        } catch (error) {
+            console.error('Error updating status:', error);
+            this.showNotification('Failed to update status. Please try again.', 'error');
         }
     }
 
@@ -665,24 +553,6 @@ class AdminDashboard {
                         ${this.getRecentActivityHTML()}
                     </div>
                 </div>
-                
-                <div class="quick-actions">
-                    <h3>Quick Actions</h3>
-                    <div class="action-buttons">
-                        <button class="btn-primary" onclick="adminDashboard.updateContent('pending')">
-                            <i class="fas fa-inbox"></i>
-                            Review Pending
-                        </button>
-                        <button class="btn-secondary" onclick="adminDashboard.exportData()">
-                            <i class="fas fa-download"></i>
-                            Export Data
-                        </button>
-                        <button class="btn-secondary" onclick="adminDashboard.showSettings()">
-                            <i class="fas fa-cog"></i>
-                            Settings
-                        </button>
-                    </div>
-                </div>
             </div>
         `;
     }
@@ -693,8 +563,7 @@ class AdminDashboard {
             total: this.suggestions.length,
             pending: this.suggestions.filter(s => s.status === 'Pending').length,
             implemented: this.suggestions.filter(s => s.status === 'Implemented').length,
-            responded: this.suggestions.filter(s => s.response && s.response.trim() !== '').length,
-            rejected: this.suggestions.filter(s => s.status === 'Rejected').length
+            responded: this.suggestions.filter(s => s.adminResponse && s.adminResponse.trim() !== '').length
         };
     }
 
@@ -716,7 +585,7 @@ class AdminDashboard {
                 <div class="activity-content">
                     <strong>${suggestion.department}</strong>
                     <p>${suggestion.text.substring(0, 80)}${suggestion.text.length > 80 ? '...' : ''}</p>
-                    <span class="activity-date">${this.formatDate(suggestion.date)} • ${suggestion.status}</span>
+                    <span class="activity-date">${this.formatDate(suggestion.created)} • ${suggestion.status}</span>
                 </div>
             </div>
         `).join('');
@@ -740,124 +609,16 @@ class AdminDashboard {
         suggestionsGrid.innerHTML = `
             <div class="settings-container">
                 <div class="settings-section">
-                    <h3><i class="fas fa-sliders-h"></i> Dashboard Settings</h3>
-                    <div class="setting-item">
-                        <label for="notifications">Enable Notifications</label>
-                        <input type="checkbox" id="notifications" checked>
-                    </div>
-                    <div class="setting-item">
-                        <label for="autoRefresh">Auto-refresh (minutes)</label>
-                        <select id="autoRefresh">
-                            <option value="0">Off</option>
-                            <option value="5">5</option>
-                            <option value="10">10</option>
-                            <option value="15">15</option>
-                        </select>
-                    </div>
-                </div>
-                
-                <div class="settings-section">
-                    <h3><i class="fas fa-database"></i> Data Management</h3>
-                    <div class="setting-actions">
-                        <button class="btn-primary" onclick="adminDashboard.exportData()">
-                            <i class="fas fa-download"></i>
-                            Export All Data
-                        </button>
-                        <button class="btn-secondary" onclick="adminDashboard.importData()">
-                            <i class="fas fa-upload"></i>
-                            Import Data
-                        </button>
-                        <button class="btn-danger" onclick="adminDashboard.clearAllData()">
-                            <i class="fas fa-trash"></i>
-                            Clear All Data
-                        </button>
-                    </div>
-                </div>
-                
-                <div class="settings-section">
                     <h3><i class="fas fa-info-circle"></i> System Information</h3>
                     <div class="system-info">
-                        <p><strong>Version:</strong> 2.1.0</p>
-                        <p><strong>Last Updated:</strong> ${this.formatDate(new Date().toISOString())}</p>
+                        <p><strong>Backend:</strong> Firebase Firestore</p>
+                        <p><strong>Authentication:</strong> Firebase Auth</p>
                         <p><strong>Total Suggestions:</strong> ${this.suggestions.length}</p>
-                        <p><strong>Storage Key:</strong> ${this.SUGGESTIONS_KEY}</p>
+                        <p><strong>Real-time Updates:</strong> Enabled</p>
                     </div>
                 </div>
             </div>
         `;
-    }
-
-    // Export data
-    exportData() {
-        const dataStr = JSON.stringify(this.suggestions, null, 2);
-        const dataBlob = new Blob([dataStr], { type: 'application/json' });
-        
-        const url = URL.createObjectURL(dataBlob);
-        const link = document.createElement('a');
-        link.href = url;
-        link.download = `muni-suggestions-${new Date().toISOString().split('T')[0]}.json`;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        URL.revokeObjectURL(url);
-        
-        this.showNotification('Data exported successfully!', 'success');
-    }
-
-    // Import data
-    importData() {
-        const input = document.createElement('input');
-        input.type = 'file';
-        input.accept = '.json';
-        
-        input.onchange = (e) => {
-            const file = e.target.files[0];
-            if (file) {
-                const reader = new FileReader();
-                reader.onload = (event) => {
-                    try {
-                        const importedData = JSON.parse(event.target.result);
-                        if (Array.isArray(importedData)) {
-                            this.suggestions = importedData.map(s => this.transformSuggestionFormat(s));
-                            const success = this.saveSuggestions();
-                            
-                            if (success) {
-                                this.refreshCurrentView();
-                                this.updateStudentSystemStats();
-                                this.showNotification('Data imported successfully!', 'success');
-                            }
-                        } else {
-                            this.showNotification('Invalid data format', 'error');
-                        }
-                    } catch (error) {
-                        this.showNotification('Error importing data', 'error');
-                    }
-                };
-                reader.readAsText(file);
-            }
-        };
-        
-        input.click();
-    }
-
-    // Clear all data
-    clearAllData() {
-        if (confirm('Are you sure you want to clear all data? This action cannot be undone.')) {
-            this.suggestions = [];
-            const success = this.saveSuggestions();
-            
-            if (success) {
-                this.refreshCurrentView();
-                this.updateStudentSystemStats();
-                this.showNotification('All data cleared successfully', 'success');
-            }
-        }
-    }
-
-    // Setup search functionality
-    setupSearch() {
-        // This can be extended with actual search implementation
-        console.log('Search functionality ready to be implemented');
     }
 
     // Close all modals
@@ -928,8 +689,9 @@ class AdminDashboard {
 
     // Format date
     formatDate(dateString) {
+        const date = new Date(dateString);
         const options = { year: 'numeric', month: 'short', day: 'numeric' };
-        return new Date(dateString).toLocaleDateString(undefined, options);
+        return date.toLocaleDateString(undefined, options);
     }
 
     // Escape HTML to prevent XSS
@@ -943,12 +705,25 @@ class AdminDashboard {
     }
 
     // Logout function
-    logout() {
+    async logout() {
         if (confirm('Are you sure you want to logout?')) {
             this.showNotification('Logging out...', 'info');
+            
+            // Unsubscribe from real-time listener
+            if (this.unsubscribe) {
+                this.unsubscribe();
+            }
+            
             // Clear admin session
             localStorage.removeItem('adminLoggedIn');
             localStorage.removeItem('adminLoginTime');
+            
+            // Sign out from Firebase
+            try {
+                await signOut(auth);
+            } catch (error) {
+                console.error('Error signing out:', error);
+            }
             
             // Redirect to login page
             setTimeout(() => {
@@ -1018,19 +793,3 @@ function updateStatus(id, status) {
         window.adminDashboard.updateStatus(id, status);
     }
 }
-
-// Export storage functions for compatibility with student system
-window.readSuggestions = () => {
-    if (window.adminDashboard) {
-        return window.adminDashboard.suggestions;
-    }
-    return [];
-};
-
-window.saveSuggestions = (list) => {
-    if (window.adminDashboard) {
-        window.adminDashboard.suggestions = list;
-        return window.adminDashboard.saveSuggestions();
-    }
-    return false;
-};
